@@ -1,0 +1,9 @@
+.DS_Store
+.build/
+.swiftpm/
+*.xcodeproj
+DerivedData/
+Package.resolved
+
+# Demo secrets (API key etc.) — copy DemoSecrets.example.plist to set up.
+DemoSecrets.plist

@@ -1,0 +1,34 @@
+name: SentinelExample
+options:
+  bundleIdPrefix: com.finvasia.sentinel.example
+  deploymentTarget:
+    iOS: "14.3"
+  createIntermediateGroups: true
+packages:
+  Sentinel:
+    path: ../
+targets:
+  SentinelExample:
+    type: application
+    platform: iOS
+    sources:
+      - path: SentinelExample
+    dependencies:
+      - package: Sentinel
+        product: Sentinel
+    info:
+      path: SentinelExample/Info.plist
+      properties:
+        CFBundleDisplayName: Sentinel Example
+        NSCameraUsageDescription: Used to verify your identity (liveness and document capture).
+        UILaunchScreen: {}
+        # Lets the demo reach the local LAN edge (https://10.10.10.51) for the
+        # create-session call + WebView without disabling ATS for real hosts.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.finvasia.sentinel.example
+        TARGETED_DEVICE_FAMILY: "1"
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"

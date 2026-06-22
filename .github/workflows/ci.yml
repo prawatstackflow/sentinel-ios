@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Swift unit tests (host)
+        run: swift test
+      - name: Build SDK for iOS Simulator
+        run: xcodebuild build -scheme Sentinel -destination 'generic/platform=iOS Simulator'
+      - name: Build example app
+        run: |
+          brew install xcodegen
+          cd Example
+          xcodegen generate
+          xcodebuild build -scheme SentinelExample -destination 'generic/platform=iOS Simulator'
