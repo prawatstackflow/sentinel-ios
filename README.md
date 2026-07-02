@@ -2,8 +2,14 @@
 
 Native iOS SDK for the **Sentinel** identity-verification flow. It hosts the
 deployed web verification runtime in a `WKWebView` and adds a native layer for
-camera-permission handling and a typed result callback — so the
+camera-permission handling and a typed status callback — so the
 chat/widget/branding UI stays in sync with web automatically.
+
+The SDK **reports** status; it does not close itself. On every status change it
+calls your `onEvent` handler and leaves the WebView open; the host decides when
+to tear down via the returned `SentinelSession`. (The SDK's own navigation-bar
+Close button is the one exception — it emits `.cancelled` and dismisses so the
+user is never trapped.)
 
 See `docs/mobile-sdk-contract.md` in the platform repo for the cross-platform
 contract this SDK mirrors.
@@ -42,19 +48,26 @@ Once the spec is published to the CocoaPods trunk, `pod 'Sentinel', '~> 0.1'` wi
 ```swift
 import Sentinel
 
-Sentinel.present(from: self, config: SentinelConfig(
+let session = Sentinel.present(from: self, config: SentinelConfig(
     sessionId: sessionId,         // from your backend's POST /sessions
     sessionToken: sessionToken,
     // hostedFlowBaseURL defaults to the Finvasia test environment; override:
     // hostedFlowBaseURL: "https://identity.yourco.com",
     theme: .system
-)) { result in
-    switch result {
-    case .approved:            goToSuccess()
-    case .rejected:            goToRejected()
-    case .underReview:         goToPending()
-    case .cancelled:           break               // user dismissed
-    case .failed(let message): showError(message)
+)) { event in
+    switch event {
+    case .ready:                    break
+    case .completed(let outcome):
+        switch outcome {
+        case .approved:    goToSuccess()
+        case .rejected:    goToRejected()
+        case .underReview: goToPending()
+        case .completed:   goToDone()
+        }
+        session?.dismiss()          // host decides when to close
+    case .cancelled:                session?.dismiss()   // user exited
+    case .error(let message):       showError(message); session?.dismiss()
+    case .loadFailed(let message):  showError(message); session?.dismiss()
     }
 }
 ```
@@ -92,7 +105,9 @@ The harness offers two ways to start a flow:
 - Loads `{hostedFlowBaseURL}/verification/{sessionId}?token=…&theme=…&platform=native`.
 - Grants the WebView camera capture request (iOS 15+ `WKUIDelegate`; iOS 14.3–14
   uses the system prompt backed by `NSCameraUsageDescription`).
-- Returns a typed `SentinelResult`; maps a failed page load to `.failed`.
+- Reports typed `SentinelEvent`s via `onEvent`; maps a failed page load to
+  `.loadFailed`. Never closes itself on a web status — the host dismisses via the
+  returned `SentinelSession`.
 - Keeps navigation within the hosted origin (foreign CTA links open in Safari).
 
 ## Known follow-ups

@@ -3,18 +3,17 @@ import UIKit
 import WebKit
 
 /// Internal host controller. Loads the hosted verification runtime in a
-/// WKWebView and bridges its lifecycle/result messages to a [SentinelResult].
+/// WKWebView and forwards its lifecycle/status messages as [SentinelEvent]s.
 final class SentinelViewController: UIViewController, WKScriptMessageHandler,
     WKNavigationDelegate, WKUIDelegate, UIScrollViewDelegate
 {
     private let config: SentinelConfig
-    private let completion: (SentinelResult) -> Void
-    private var resultDelivered = false
+    private let onEvent: (SentinelEvent) -> Void
     private var webView: WKWebView!
 
-    init(config: SentinelConfig, completion: @escaping (SentinelResult) -> Void) {
+    init(config: SentinelConfig, onEvent: @escaping (SentinelEvent) -> Void) {
         self.config = config
-        self.completion = completion
+        self.onEvent = onEvent
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -63,21 +62,23 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
 
         let isDark = traitCollection.userInterfaceStyle == .dark
         guard let url = VerificationURL.build(for: config, isDarkMode: isDark) else {
-            deliver(.failed(message: "Invalid hosted flow URL"))
+            emit(.loadFailed(message: "Invalid hosted flow URL"))
             return
         }
         webView.load(URLRequest(url: url))
     }
 
     @objc private func cancelTapped() {
-        deliver(.cancelled)
+        // The SDK's own Close button is the one self-teardown: report cancelled
+        // AND dismiss, so the user is never trapped if the host doesn't close.
+        emit(.cancelled)
+        dismiss(animated: true)
     }
 
-    private func deliver(_ result: SentinelResult) {
-        guard !resultDelivered else { return }
-        resultDelivered = true
-        let completion = self.completion
-        dismiss(animated: true) { completion(result) }
+    /// Forwards a status update to the host. Never dismisses — closing is the
+    /// host's decision (via `SentinelSession.dismiss()`) or the Close button.
+    private func emit(_ event: SentinelEvent) {
+        onEvent(event)
     }
 
     // MARK: - WKScriptMessageHandler
@@ -92,17 +93,24 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
         else { return }
 
         switch type {
+        case "ready":
+            emit(.ready)
         case "complete":
             switch body["outcome"] as? String {
-            case "approved": deliver(.approved)
-            case "rejected": deliver(.rejected)
-            default: deliver(.underReview)
+            case "approved": emit(.completed(.approved))
+            case "rejected": emit(.completed(.rejected))
+            case "completed": emit(.completed(.completed))
+            default: emit(.completed(.underReview))
             }
         case "error":
             let msg = (body["message"] as? String) ?? "Verification error"
-            deliver(.failed(message: msg))
+            emit(.error(message: msg))
+        case "cancel":
+            // User confirmed the in-flow "Exit Onboarding" dialog. Report it and
+            // let the host close — the SDK no longer tears itself down here.
+            emit(.cancelled)
         default:
-            break  // "ready" is informational.
+            break
         }
     }
 
@@ -130,7 +138,7 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-        deliver(.failed(message: "Failed to load verification: \(error.localizedDescription)"))
+        emit(.loadFailed(message: "Failed to load verification: \(error.localizedDescription)"))
     }
 
     func webView(
@@ -138,7 +146,7 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
         didFailProvisionalNavigation navigation: WKNavigation!,
         withError error: Error
     ) {
-        deliver(.failed(message: "Failed to load verification: \(error.localizedDescription)"))
+        emit(.loadFailed(message: "Failed to load verification: \(error.localizedDescription)"))
     }
 
     // MARK: - WKUIDelegate (camera permission)

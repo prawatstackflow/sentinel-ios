@@ -17,6 +17,9 @@ struct ContentView: View {
         ? "Set DEMO_API_KEY in DemoSecrets.plist to use this."
         : ""
     @State private var creatingSession = false
+    // Held so the demo can close the flow when *it* decides — the SDK no longer
+    // self-dismisses on a status event.
+    @State private var session: SentinelSession?
 
     private var demoConfigured: Bool { !DemoConfig.apiKey.isEmpty }
 
@@ -95,13 +98,28 @@ struct ContentView: View {
             sessionToken: sessionToken,
             hostedFlowBaseURL: base
         )
-        Sentinel.present(from: presenter, config: config) { result in
-            switch result {
-            case .approved: resultText = "Result: APPROVED"
-            case .rejected: resultText = "Result: REJECTED"
-            case .underReview: resultText = "Result: UNDER REVIEW"
-            case .cancelled: resultText = "Result: cancelled"
-            case .failed(let message): resultText = "Result: failed — \(message)"
+        session = Sentinel.present(from: presenter, config: config) { event in
+            switch event {
+            case .ready:
+                resultText = "Status: ready"
+            case .completed(let outcome):
+                switch outcome {
+                case .approved: resultText = "Result: APPROVED"
+                case .rejected: resultText = "Result: REJECTED"
+                case .underReview: resultText = "Result: UNDER REVIEW"
+                case .completed: resultText = "Result: COMPLETED"
+                }
+                // Demo close policy: the host decides to close on a terminal event.
+                session?.dismiss()
+            case .cancelled:
+                resultText = "Result: cancelled"
+                session?.dismiss()
+            case .error(let message):
+                resultText = "Result: error — \(message)"
+                session?.dismiss()
+            case .loadFailed(let message):
+                resultText = "Result: load failed — \(message)"
+                session?.dismiss()
             }
         }
     }
