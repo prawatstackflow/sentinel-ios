@@ -87,10 +87,22 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
         _ userContentController: WKUserContentController,
         didReceive message: WKScriptMessage
     ) {
-        guard message.name == "sentinel",
-            let body = message.body as? [String: Any],
-            let type = body["type"] as? String
-        else { return }
+        // Per the contract the web posts a JS object here, but the `cancel` path
+        // (ChatRuntime) historically posted a JSON string — tolerate both so the
+        // SDK works against already-deployed flows and stays robust to drift.
+        guard message.name == "sentinel" else { return }
+        let body: [String: Any]
+        if let dict = message.body as? [String: Any] {
+            body = dict
+        } else if let json = message.body as? String,
+            let data = json.data(using: .utf8),
+            let parsed = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        {
+            body = parsed
+        } else {
+            return
+        }
+        guard let type = body["type"] as? String else { return }
 
         switch type {
         case "ready":
