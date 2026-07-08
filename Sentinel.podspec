@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'Sentinel'
-  s.version          = '0.1.0'
+  s.version          = '0.1.3'
   s.summary          = 'Native iOS SDK for the Sentinel identity-verification flow.'
   s.description      = <<-DESC
     Hosts the Sentinel web verification runtime in a WKWebView and adds a native

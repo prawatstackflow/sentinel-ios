@@ -27,7 +27,7 @@ contract this SDK mirrors.
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/prawatstackflow/sentinel-ios.git", from: "0.1.0")
+    .package(url: "https://github.com/prawatstackflow/sentinel-ios.git", from: "0.1.3")
 ]
 ```
 
@@ -38,7 +38,7 @@ Or in Xcode: **File ▸ Add Package Dependencies…** and enter the repo URL.
 The podspec ships in the repo, so the git form works immediately:
 
 ```ruby
-pod 'Sentinel', :git => 'https://github.com/prawatstackflow/sentinel-ios.git', :tag => '0.1.0'
+pod 'Sentinel', :git => 'https://github.com/prawatstackflow/sentinel-ios.git', :tag => '0.1.3'
 ```
 
 Once the spec is published to the CocoaPods trunk, `pod 'Sentinel', '~> 0.1'` will also work.
