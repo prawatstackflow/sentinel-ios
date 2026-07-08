@@ -12,8 +12,8 @@ import UIKit
 /// ```
 @MainActor
 public final class SentinelSession {
-    // Weak: once the host (or the SDK's own Close button) dismisses the modal,
-    // UIKit releases it and `dismiss()` becomes a no-op.
+    // Weak: once the host (or the built-in swipe-to-dismiss gesture) dismisses
+    // the modal, UIKit releases it and `dismiss()` becomes a no-op.
     private weak var presented: UIViewController?
 
     init(presented: UIViewController) {

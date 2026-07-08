@@ -5,11 +5,15 @@ deployed web verification runtime in a `WKWebView` and adds a native layer for
 camera-permission handling and a typed status callback — so the
 chat/widget/branding UI stays in sync with web automatically.
 
+The flow is presented as an edge-to-edge full-screen `WKWebView` with no native
+chrome (matching the Android SDK) — the hosted flow renders its own header and
+exit affordance.
+
 The SDK **reports** status; it does not close itself. On every status change it
 calls your `onEvent` handler and leaves the WebView open; the host decides when
-to tear down via the returned `SentinelSession`. (The SDK's own navigation-bar
-Close button is the one exception — it emits `.cancelled` and dismisses so the
-user is never trapped.)
+to tear down via the returned `SentinelSession`. (A built-in swipe-down gesture
+is the one exception — it emits `.cancelled` and dismisses so the user is never
+trapped, even if the hosted flow hides its own header.)
 
 See `docs/mobile-sdk-contract.md` in the platform repo for the cross-platform
 contract this SDK mirrors.

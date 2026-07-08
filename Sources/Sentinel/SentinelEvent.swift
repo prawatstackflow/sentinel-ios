@@ -26,6 +26,12 @@ public enum SentinelEvent: Equatable {
     /// The user confirmed the in-flow "Exit Onboarding" dialog, or dismissed via
     /// the SDK's own navigation-bar Close button.
     case cancelled
+    /// The user tapped "Done" on the terminal outcome screen after the flow
+    /// finished. Distinct from `.cancelled` (the user abandoned the flow): here
+    /// the flow completed and the user acknowledged the outcome. The host should
+    /// dismiss on this — the SDK keeps the WebView open on `.completed` so the
+    /// user can read the outcome, and closes only when they choose to.
+    case closed
     /// The web runtime reported an unrecoverable error.
     case error(message: String)
     /// The WebView failed to load (page-load / transport failure). SDK-level,

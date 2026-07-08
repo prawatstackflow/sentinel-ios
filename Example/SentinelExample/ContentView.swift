@@ -103,13 +103,17 @@ struct ContentView: View {
             case .ready:
                 resultText = "Status: ready"
             case .completed(let outcome):
+                // Show the outcome but DO NOT dismiss — the SDK keeps the WebView
+                // open on the outcome screen so the user can read it. The host
+                // dismisses only when the user taps "Done" (.closed), below.
                 switch outcome {
                 case .approved: resultText = "Result: APPROVED"
                 case .rejected: resultText = "Result: REJECTED"
                 case .underReview: resultText = "Result: UNDER REVIEW"
                 case .completed: resultText = "Result: COMPLETED"
                 }
-                // Demo close policy: the host decides to close on a terminal event.
+            case .closed:
+                // User tapped "Done" on the outcome screen — now close.
                 session?.dismiss()
             case .cancelled:
                 resultText = "Result: cancelled"
