@@ -12,7 +12,7 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
 
     private let config: SentinelConfig
     private let onEvent: (SentinelEvent) -> Void
-    private var webView: WKWebView!
+    private var webView: SentinelWebView!
 
     // Custom slide-down dismissal so the edge-to-edge `.fullScreen` look is kept
     // while the user still has a swipe-down escape hatch (the safety net that
@@ -43,7 +43,7 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
         configuration.allowsInlineMediaPlayback = true
         configuration.mediaTypesRequiringUserActionForPlayback = []
 
-        webView = WKWebView(frame: .zero, configuration: configuration)
+        webView = SentinelWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = self
         webView.uiDelegate = self
         // Edge-to-edge: don't let the scroll view auto-inset for the bottom safe
