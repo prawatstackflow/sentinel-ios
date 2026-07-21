@@ -194,6 +194,14 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
         decidePolicyFor navigationAction: WKNavigationAction,
         decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
     ) {
+        // Sub-frame loads (e.g. the LiveChat support chat's cross-origin iframe on
+        // *.livechatinc.com) must load in place; only MAIN-frame foreign nav escapes
+        // to Safari. `targetFrame == nil` is a new-window/_blank target → treat as a
+        // main frame so external links still leave.
+        if !(navigationAction.targetFrame?.isMainFrame ?? true) {
+            decisionHandler(.allow)
+            return
+        }
         guard let url = navigationAction.request.url,
             let base = URL(string: config.hostedFlowBaseURL)
         else {
