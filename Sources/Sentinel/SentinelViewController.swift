@@ -12,6 +12,7 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
 
     private let config: SentinelConfig
     private let onEvent: (SentinelEvent) -> Void
+    private let onLiveChat: ((LiveChatRequest) -> Void)?
     private var webView: SentinelWebView!
 
     // Custom slide-down dismissal so the edge-to-edge `.fullScreen` look is kept
@@ -20,9 +21,14 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
     private let dismissTransitioning = SlideDownDismissTransitioning()
     private var interactor: UIPercentDrivenInteractiveTransition?
 
-    init(config: SentinelConfig, onEvent: @escaping (SentinelEvent) -> Void) {
+    init(
+        config: SentinelConfig,
+        onEvent: @escaping (SentinelEvent) -> Void,
+        onLiveChat: ((LiveChatRequest) -> Void)? = nil
+    ) {
         self.config = config
         self.onEvent = onEvent
+        self.onLiveChat = onLiveChat
         super.init(nibName: nil, bundle: nil)
         modalPresentationStyle = .fullScreen
         transitioningDelegate = dismissTransitioning
@@ -160,6 +166,7 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
             return
         }
         guard let type = body["type"] as? String else { return }
+        Self.logger.log("bridge message: \(type, privacy: .public)")
 
         switch type {
         case "ready":
@@ -182,6 +189,25 @@ final class SentinelViewController: UIViewController, WKScriptMessageHandler,
             // User tapped "Done" on the terminal outcome screen. Report it and let
             // the host dismiss — distinct from `cancel` (the flow finished).
             emit(.closed)
+        case "live_chat":
+            // Non-terminal: hand the request to the host's onLiveChat callback so it
+            // opens LiveChat natively. NOT a SentinelEvent — the flow status is
+            // unchanged and the WebView is never dismissed.
+            if let request = LiveChatRequest(body: body) {
+                // Debug log — non-PII only (never log customerName/customerEmail).
+                Self.logger.log(
+                    """
+                    live_chat request: license=\(request.license, privacy: .public) \
+                    group=\(request.group, privacy: .public) \
+                    forwardPii=\(request.forwardPii, privacy: .public) \
+                    vars=\(request.sessionVariables.count, privacy: .public) \
+                    handler=\(self.onLiveChat != nil, privacy: .public)
+                    """
+                )
+                onLiveChat?(request)
+            } else {
+                Self.logger.error("live_chat message received but could not be decoded")
+            }
         default:
             break
         }

@@ -13,7 +13,10 @@ public struct SentinelConfig {
     public let hostedFlowBaseURL: String
     /// Color scheme; `.system` follows the device at launch.
     public let theme: SentinelTheme
-    /// Optional BCP-47 locale hint. Reserved — not yet consumed by the runtime.
+    /// Optional BCP-47 language for the flow (e.g. "fr", "ar"). Sent as
+    /// `?locale=` on the WebView URL; the runtime applies it to the session at
+    /// bootstrap so the assistant AND all UI chrome render in this language. Omit
+    /// to use the session's own language (context.language / tenant default / English).
     public let locale: String?
 
     public init(

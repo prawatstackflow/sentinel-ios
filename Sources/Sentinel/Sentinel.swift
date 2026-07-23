@@ -30,14 +30,22 @@ public enum Sentinel {
     ///
     /// The host app must declare `NSCameraUsageDescription` in its Info.plist
     /// (liveness uses the camera) and target iOS 14.3+.
+    ///
+    /// `onLiveChat` (optional) is invoked when the user taps "Chat with support"
+    /// inside the flow. It is a **non-terminal** request — the flow stays open —
+    /// asking the host to open LiveChat natively with the supplied
+    /// `LiveChatRequest` (license/group + session context). Omit it to leave the
+    /// support button inert on native (the hosted flow does not open LiveChat
+    /// in-WebView).
     @MainActor
     @discardableResult
     public static func present(
         from presenter: UIViewController,
         config: SentinelConfig,
-        onEvent: @escaping (SentinelEvent) -> Void
+        onEvent: @escaping (SentinelEvent) -> Void,
+        onLiveChat: ((LiveChatRequest) -> Void)? = nil
     ) -> SentinelSession {
-        let controller = SentinelViewController(config: config, onEvent: onEvent)
+        let controller = SentinelViewController(config: config, onEvent: onEvent, onLiveChat: onLiveChat)
         presenter.present(controller, animated: true)
         return SentinelSession(presented: controller)
     }

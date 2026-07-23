@@ -125,6 +125,12 @@ struct ContentView: View {
                 resultText = "Result: load failed — \(message)"
                 session?.dismiss()
             }
+        } onLiveChat: { request in
+            // Non-terminal: the flow stays open. A real host opens LiveChat's iOS
+            // SDK here with request.license / .group / .sessionVariables (and, when
+            // request.forwardPii, request.customerName / .customerEmail). The demo
+            // just shows it fired.
+            resultText = "LiveChat requested — license \(request.license), group \(request.group)"
         }
     }
 
